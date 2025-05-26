@@ -1,4 +1,5 @@
 import { pipeline, FeatureExtractionPipeline } from "@xenova/transformers"
+import type { Goal } from "@/components/ui/goal-store"
 
 let extractor: FeatureExtractionPipeline | null = null
 
@@ -20,7 +21,8 @@ async function loadModel() {
   }
 }
 
-// Similarity
+
+// Cosine similarity helper
 function cosineSimilarity(a: number[], b: number[]): number {
   const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0)
   const normA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0))
@@ -28,32 +30,42 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (normA * normB)
 }
 
-// Task handler
+// Message handler
 self.onmessage = async (event) => {
   const { type, task, goals, threshold = 0.5 } = event.data
 
   if (type === "prioritize") {
     if (!extractor) {
       await loadModel()
-      // After load, retry the same message
       self.postMessage({ type: "retry", task })
       return
     }
 
     try {
-      const taskEmbedding = (await extractor(task.title)).data[0] as number[]
+      if (typeof task.title !== "string") {
+        throw new Error("Task title is not a string")
+      }
+
+      console.log(`[LLM Worker] Prioritizing: "${task.title}"`)
+      const output = await extractor(task.title)
+      const taskEmbedding = Array.from(output.data) as number[]
 
       const goalEmbeddings = await Promise.all(
-        goals.map(async (g: { title: string }) =>
-          (await extractor!(g.title)).data[0] as number[]
-        )
+        goals.map(async (g: Goal) => {
+          const result = await extractor!(g.title)
+          return Array.from(result.data) as number[]
+        })
       )
 
       let bestScore = 0
       let bestId: string | null = null
 
       for (let i = 0; i < goals.length; i++) {
+        console.log("Task embedding:", taskEmbedding)
+        console.log("Goal embedding:", goalEmbeddings[i])
         const score = cosineSimilarity(taskEmbedding, goalEmbeddings[i])
+        console.log(`[LLM Worker] → "${goals[i].title}" = ${score.toFixed(4)}`)
+
         if (score > bestScore) {
           bestScore = score
           bestId = goals[i].id
@@ -72,5 +84,5 @@ self.onmessage = async (event) => {
   }
 }
 
-// Kick off model load immediately
+// Initial load
 loadModel()
