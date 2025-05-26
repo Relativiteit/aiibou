@@ -21,9 +21,28 @@ async function loadModel() {
   }
 }
 
+// Mean pooling helper
+function meanPool(tensor: number[][]): number[] {
+  const length = tensor.length
+  const dim = tensor[0].length
+  const pooled = new Array(dim).fill(0)
+
+  for (let i = 0; i < length; i++) {
+    for (let j = 0; j < dim; j++) {
+      pooled[j] += tensor[i][j]
+    }
+  }
+
+  return pooled.map((x) => x / length)
+}
 
 // Cosine similarity helper
 function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    console.warn(`[LLM Worker] ❌ Embedding length mismatch: ${a.length} ${b.length}`)
+    return 0
+  }
+
   const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0)
   const normA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0))
   const normB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0))
@@ -48,12 +67,12 @@ self.onmessage = async (event) => {
 
       console.log(`[LLM Worker] Prioritizing: "${task.title}"`)
       const output = await extractor(task.title)
-      const taskEmbedding = Array.from(output.data) as number[]
+      const taskEmbedding = meanPool(output.data as number[][])
 
       const goalEmbeddings = await Promise.all(
         goals.map(async (g: Goal) => {
           const result = await extractor!(g.title)
-          return Array.from(result.data) as number[]
+          return meanPool(result.data as number[][])
         })
       )
 
@@ -61,8 +80,6 @@ self.onmessage = async (event) => {
       let bestId: string | null = null
 
       for (let i = 0; i < goals.length; i++) {
-        console.log("Task embedding:", taskEmbedding)
-        console.log("Goal embedding:", goalEmbeddings[i])
         const score = cosineSimilarity(taskEmbedding, goalEmbeddings[i])
         console.log(`[LLM Worker] → "${goals[i].title}" = ${score.toFixed(4)}`)
 

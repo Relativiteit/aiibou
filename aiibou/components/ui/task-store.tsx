@@ -12,6 +12,7 @@ export type Task = {
   isDone: boolean
   pomodoroSessions: number
   linkedGoal?: string
+  priority?: number
 }
 
 type TaskStore = {
@@ -22,6 +23,7 @@ type TaskStore = {
   clearCompleted: () => void
   deleteTask: (id: string) => void
   updateTask: (id: string, updates: Partial<Task>) => void
+  sortTasksByPriority: () => void
 }
 
 export const useTaskStore = create<TaskStore>()(
@@ -72,6 +74,10 @@ export const useTaskStore = create<TaskStore>()(
             task.id === id ? { ...task, ...updates } : task
           ),
         })
+      },
+      sortTasksByPriority: () => {
+        const sorted = [...get().tasks].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+        set({ tasks: sorted })
       },
     }),
     {

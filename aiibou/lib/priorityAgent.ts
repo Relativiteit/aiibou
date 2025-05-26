@@ -1,7 +1,7 @@
 import type { Task } from "@/components/ui/task-store"
 import type { Goal } from "@/components/ui/goal-store"
 
-let worker: Worker 
+let worker: Worker
 let readyPromise: Promise<void> | null = null
 
 function ensureWorker(): Worker {
@@ -9,7 +9,6 @@ function ensureWorker(): Worker {
     console.log("[Agent] Starting worker thread...")
     worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" })
 
-    // Send init
     worker.postMessage({ type: "init" })
 
     readyPromise = new Promise((resolve) => {
@@ -35,14 +34,17 @@ export async function waitUntilModelReady(): Promise<void> {
 export async function autoLinkTasksToGoals(
   tasks: Task[],
   goals: Goal[]
-): Promise<Record<string, string | null>> {
+): Promise<Record<string, [string, number] | null>> {
   const worker = ensureWorker()
 
   return new Promise((resolve, reject) => {
-    const results: Record<string, string | null> = {}
+    const results: Record<string, [string, number] | null> = {}
+
     const listener = (e: MessageEvent) => {
       if (e.data?.type === "result") {
         results[e.data.task.id] = e.data.bestId
+          ? [e.data.bestId, e.data.score]
+          : null
 
         if (Object.keys(results).length === tasks.length) {
           worker.removeEventListener("message", listener)

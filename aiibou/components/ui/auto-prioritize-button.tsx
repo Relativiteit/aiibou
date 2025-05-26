@@ -10,6 +10,7 @@ export function AutoPrioritizeButton() {
   const tasks = useTaskStore((s) => s.tasks)
   const updateTask = useTaskStore((s) => s.updateTask)
   const goals = useGoalStore((s) => s.goals)
+  const sortTasksByPriority = useTaskStore((s) => s.sortTasksByPriority)
 
   const [loading, setLoading] = useState(false)
   const [modelReady, setModelReady] = useState(false)
@@ -31,14 +32,16 @@ export function AutoPrioritizeButton() {
       const result = await autoLinkTasksToGoals(tasks, goals)
 
       let updated = 0
-      for (const [taskId, goalId] of Object.entries(result)) {
+      for (const [taskId, goalIdAndScore] of Object.entries(result)) {
+        const [goalId, score] = goalIdAndScore ?? [null, 0]
         if (goalId) {
-          updateTask(taskId, { linkedGoal: goalId })
+          updateTask(taskId, { linkedGoal: goalId, priority: score })
           updated++
         }
       }
 
       if (updated > 0) {
+        sortTasksByPriority()
         alert(`✅ Linked ${updated} task(s) to goals.`)
       } else {
         alert("No tasks were linked. Nothing matched.")
@@ -71,6 +74,5 @@ export function AutoPrioritizeButton() {
           : "LLM ready ✅"}
       </p>
     </div>
-    
   )
 }
