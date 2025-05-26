@@ -10,7 +10,7 @@ import {
 
 import { PomodoroTimer } from "@/components/ui/pomodoro-timer"
 import { TaskInputWithList } from "@/components/ui/task-input-list"
-
+import { AutoPrioritizeButton } from "@/components/ui/auto-prioritize-button"
 
 
 export default function Page() {
@@ -34,6 +34,7 @@ export default function Page() {
               <SectionCards />
                 <div className="px-4 lg:px-6 flex flex-col gap-4">
                 <PomodoroTimer/>
+                <AutoPrioritizeButton />
               <TaskInputWithList/>
               </div>
               <div className="px-4 lg:px-6">

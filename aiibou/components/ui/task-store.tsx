@@ -21,6 +21,7 @@ type TaskStore = {
   incrementPomodoro: (id: string) => void
   clearCompleted: () => void
   deleteTask: (id: string) => void
+  updateTask: (id: string, updates: Partial<Task>) => void
 }
 
 export const useTaskStore = create<TaskStore>()(
@@ -64,6 +65,13 @@ export const useTaskStore = create<TaskStore>()(
       },
       deleteTask: (id) => {
         set({ tasks: get().tasks.filter((t) => t.id !== id) })
+      },
+      updateTask: (id, updates) => {
+        set({
+          tasks: get().tasks.map((task) =>
+            task.id === id ? { ...task, ...updates } : task
+          ),
+        })
       },
     }),
     {

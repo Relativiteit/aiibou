@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { usePomodoroStore } from "@/components/ui/pomodoro-store"
 
 export function PomodoroTimer() {
-  const [timeLeft, setTimeLeft] = useState(0.05 * 60)
+  const [timeLeft, setTimeLeft] = useState(25 * 60)
   const [isRunning, setIsRunning] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const completeSession = usePomodoroStore((state) => state.completeSession)
@@ -30,7 +30,7 @@ export function PomodoroTimer() {
 
   const resetTimer = () => {
     setIsRunning(false)
-    setTimeLeft(0.05 * 60)
+    setTimeLeft(25 * 60)
   }
 
   const formatTime = (seconds: number) => {
