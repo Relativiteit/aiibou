@@ -23,6 +23,11 @@ async function loadModel() {
 
 // Mean pooling helper
 function meanPool(tensor: number[][]): number[] {
+  if (tensor.length === 0 || tensor[0].length === 0) {
+    console.warn("[LLM Worker] ⚠️ Empty tensor received for mean pooling.")
+    return []
+  }
+
   const length = tensor.length
   const dim = tensor[0].length
   const pooled = new Array(dim).fill(0)
@@ -67,22 +72,23 @@ self.onmessage = async (event) => {
 
       console.log(`[LLM Worker] Prioritizing: "${task.title}"`)
       const output = await extractor(task.title)
+    
       const taskEmbedding = meanPool(output.data as number[][])
 
-      const goalEmbeddings = await Promise.all(
+      const goalEmbeddings: number[][] = await Promise.all(
         goals.map(async (g: Goal) => {
           const result = await extractor!(g.title)
           return meanPool(result.data as number[][])
         })
       )
-
+      
       let bestScore = 0
       let bestId: string | null = null
 
       for (let i = 0; i < goals.length; i++) {
         const score = cosineSimilarity(taskEmbedding, goalEmbeddings[i])
         console.log(`[LLM Worker] → "${goals[i].title}" = ${score.toFixed(4)}`)
-
+      
         if (score > bestScore) {
           bestScore = score
           bestId = goals[i].id
