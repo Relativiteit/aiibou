@@ -41,6 +41,8 @@ The app will be available at http://localhost:3000
 Try to build it first with html and css make sure the pipeline works, see what you can get away with. 
 
 # 1. Make it work
+oke basic pipeline works just like tutorial. 
+TODO: make it work for text input 
 
 # 2. make it reliable 
 
